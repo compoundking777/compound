@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>복리 계산기 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg0:#f0f4f9;
+  --bg1:#ffffff;
+  --bg2:#ffffff;
+  --bg3:#f4f7fb;
+  --bg4:#e8eef6;
+  --bg5:#d0daea;
+  --gold:#1a56db;
+  --gold2:#1e429f;
+  --gold3:#1e3a8a;
+  --goldf:rgba(26,86,219,0.06);
+  --goldb:rgba(26,86,219,0.18);
+  --text:#111827;
+  --text2:#4b5563;
+  --text3:#9ca3af;
+  --blue:#1a56db;
+  --green:#059669;
+  --red:#dc2626;
+  --amber:#d97706;
+  --border:rgba(0,0,0,0.07);
+  --border2:rgba(0,0,0,0.13);
+  --r:12px;
+}
+
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg0);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* ── TOPBAR ── */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  background:rgba(255,255,255,0.9);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:0 2rem;
+  height:58px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 1px 3px rgba(0,0,0,0.06);
+}
+.topbar-logo{
+  font-family:'DM Serif Display',serif;
+  font-size:1.15rem;
+  color:var(--blue);
+  letter-spacing:0.02em;
+}
+.topbar-logo span{color:var(--text2);font-size:0.75rem;font-family:'DM Sans',sans-serif;margin-left:10px;font-weight:300}
+.topbar-right{display:flex;align-items:center;gap:1rem}
+.badge{font-size:11px;padding:4px 12px;border-radius:100px;border:1px solid var(--goldb);color:var(--blue);letter-spacing:0.05em}
+
+/* ── LAYOUT ── */
+.dashboard{
+  display:grid;
+  grid-template-columns:320px 1fr;
+  grid-template-rows:auto;
+  gap:0;
+  min-height:calc(100vh - 58px);
+}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  background:var(--bg1);
+  border-right:1px solid var(--border);
+  padding:1.5rem;
+  display:flex;flex-direction:column;gap:1.5rem;
+  position:sticky;top:58px;
+  height:calc(100vh - 58px);
+  overflow-y:auto;
+}
+
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-track{background:transparent}
+.sidebar::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+
+.sidebar-section{display:flex;flex-direction:column;gap:0.75rem}
+
+.sidebar-heading{
+  font-size:10px;letter-spacing:0.2em;text-transform:uppercase;
+  color:var(--text3);margin-bottom:0.25rem;
+  padding-bottom:8px;border-bottom:1px solid var(--border);
+}
+
+.ctrl{display:flex;flex-direction:column;gap:6px}
+.ctrl-row{display:flex;justify-content:space-between;align-items:center}
+.ctrl-label{font-size:12px;color:var(--text2);font-weight:400}
+.ctrl-val{font-size:13px;font-weight:600;color:var(--blue);font-family:'DM Serif Display',serif}
+
+input[type=range]{
+  -webkit-appearance:none;
+  width:100%;height:3px;
+  background:var(--bg4);border-radius:3px;outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:16px;height:16px;border-radius:50%;
+  background:var(--blue);border:2px solid #fff;
+  box-shadow:0 0 0 3px rgba(26,86,219,0.15);
+  cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;
+}
+input[type=range]::-webkit-slider-thumb:hover{
+  transform:scale(1.25);box-shadow:0 0 0 5px rgba(26,86,219,0.2);
+}
+input[type=range]::-webkit-slider-runnable-track{
+  background:linear-gradient(to right,var(--blue) var(--pct,0%),var(--bg4) var(--pct,0%));
+  height:3px;border-radius:3px;
+}
+
+/* goal input */
+.goal-wrap{
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:8px;padding:10px 12px;
+  display:flex;align-items:center;gap:6px;
+}
+.goal-wrap span{font-size:12px;color:var(--blue);font-weight:600;white-space:nowrap}
+.goal-wrap input[type=number]{
+  background:transparent;border:none;outline:none;
+  color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;
+  width:100%;
+}
+.goal-wrap input[type=number]::-webkit-inner-spin-button{display:none}
+
+.goal-result-box{
+  background:var(--bg3);border-radius:8px;padding:12px;
+  border-left:3px solid var(--green);
+}
+.goal-result-label{font-size:11px;color:var(--text3);margin-bottom:4px}
+.goal-result-val{font-size:1.2rem;font-weight:600;color:var(--green);font-family:'DM Serif Display',serif}
+
+/* rule72 */
+.r72-box{
+  background:var(--goldf);border:1px solid var(--goldb);
+  border-radius:8px;padding:14px;text-align:center;
+}
+.r72-num{font-family:'DM Serif Display',serif;font-size:2.2rem;color:var(--blue);line-height:1}
+.r72-sub{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* ── MAIN ── */
+.main{
+  padding:1.5rem;
+  display:flex;flex-direction:column;gap:1.5rem;
+  overflow-y:auto;
+}
+
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+
+.kpi{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.25rem 1.5rem;
+  position:relative;overflow:hidden;
+  transition:border-color 0.2s,transform 0.2s;
+}
+.kpi:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 4px 16px rgba(26,86,219,0.08)}
+.kpi::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,var(--blue),transparent);
+  opacity:0;transition:opacity 0.2s;
+}
+.kpi:hover::before{opacity:1}
+
+.kpi-label{font-size:11px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px}
+.kpi-value{font-family:'DM Serif Display',serif;font-size:1.5rem;font-weight:400;line-height:1.2;color:var(--text)}
+.kpi-value.c-gold{color:var(--blue)}
+.kpi-value.c-green{color:var(--green)}
+.kpi-value.c-blue{color:#7c3aed}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:6px}
+
+/* ── CHART PANEL ── */
+.panel{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.5rem;
+}
+.panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.panel-title{font-size:13px;font-weight:600;color:var(--text);letter-spacing:0.02em}
+.panel-legend{display:flex;gap:16px}
+.leg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)}
+.leg-dot{width:8px;height:8px;border-radius:2px}
+
+.chart-wrap{position:relative;height:280px}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto}
+.tbl-wrap::-webkit-scrollbar{height:4px}
+.tbl-wrap::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead tr{background:var(--bg3)}
+th{
+  padding:10px 14px;text-align:right;
+  font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--text3);white-space:nowrap;
+}
+th:first-child{text-align:left}
+td{padding:10px 14px;text-align:right;border-top:1px solid var(--border);white-space:nowrap}
+td:first-child{text-align:left;color:var(--text2);font-weight:500}
+tr:hover td{background:var(--bg3)}
+
+.td-gold{color:var(--blue);font-weight:600}
+.td-green{color:var(--green)}
+.td-blue{color:#7c3aed}
+.td-red{color:var(--red)}
+.td-muted{color:var(--text3)}
+
+/* ── YEARLY TABLE ── */
+.yr-tbl-wrap{overflow-x:auto;max-height:320px;overflow-y:auto}
+.yr-tbl-wrap::-webkit-scrollbar{width:4px;height:4px}
+.yr-tbl-wrap::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+
+.yearly-input{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:6px;padding:5px 8px;
+  color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;
+  width:110px;text-align:right;outline:none;
+  transition:border-color 0.15s;
+}
+.yearly-input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(26,86,219,0.1)}
+.yearly-input::-webkit-inner-spin-button{display:none}
+
+.yr-bar{
+  display:inline-block;height:6px;border-radius:3px;
+  background:linear-gradient(90deg,var(--blue),#60a5fa);
+  vertical-align:middle;margin-left:8px;
+  transition:width 0.3s;
+}
+
+/* ── TWO COL ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.panel,.kpi{animation:fadeIn 0.5s ease both}
+.kpi:nth-child(1){animation-delay:0.05s}
+.kpi:nth-child(2){animation-delay:0.1s}
+.kpi:nth-child(3){animation-delay:0.15s}
+.kpi:nth-child(4){animation-delay:0.2s}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){
+  .dashboard{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .two-col{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .topbar{padding:0 1rem}
+  .main,.sidebar{padding:1rem}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">복리 대시보드 <span>Compound Interest</span></div>
+  <div class="topbar-right">
+    <div class="badge">월복리 기준</div>
+  </div>
+</div>
+
+<div class="dashboard">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <div class="sidebar-section">
+      <div class="sidebar-heading">기본 설정</div>
+
+      <div class="ctrl">
+        <div class="ctrl-row">
+          <span class="ctrl-label">초기 원금</span>
+          <span class="ctrl-val" id="v-p">₩1,000,000</span>
+        </div>
+        <input type="range" id="principal" min="0" max="50000000" step="500000" value="1000000">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-row">
+          <span class="ctrl-label">기본 월 납입금</span>
+          <span class="ctrl-val" id="v-m">₩100,000</span>
+        </div>
+        <input type="range" id="monthly" min="0" max="4000000" step="50000" value="100000">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-row">
+          <span class="ctrl-label">연 이자율</span>
+          <span class="ctrl-val" id="v-r">7%</span>
+        </div>
+        <input type="range" id="rate" min="1" max="20" step="0.5" value="7">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-row">
+          <span class="ctrl-label">기간</span>
+          <span class="ctrl-val" id="v-y">20년</span>
+        </div>
+        <input type="range" id="years" min="1" max="40" step="1" value="20">
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-heading">목표금액 역산</div>
+      <div class="goal-wrap">
+        <span>목표</span>
+        <input type="number" id="goal-amt" placeholder="100000000" value="100000000">
+        <span>원</span>
+      </div>
+      <div class="goal-result-box">
+        <div class="goal-result-label">필요 월 납입금</div>
+        <div class="goal-result-val" id="goal-monthly">—</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-heading">72의 법칙</div>
+      <div class="ctrl">
+        <div class="ctrl-row">
+          <span class="ctrl-label">이자율 기준</span>
+          <span class="ctrl-val" id="v-r72">7%</span>
+        </div>
+        <input type="range" id="r72" min="1" max="20" step="0.5" value="7">
+      </div>
+      <div class="r72-box">
+        <div class="r72-num" id="r72-result">10.3년</div>
+        <div class="r72-sub">원금이 2배가 되는 기간</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- KPI -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">총 납입 원금</div>
+        <div class="kpi-value" id="kpi-invested">—</div>
+        <div class="kpi-sub">실제 투입 금액</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">최종 자산</div>
+        <div class="kpi-value c-gold" id="kpi-total">—</div>
+        <div class="kpi-sub">복리 적립식 기준</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">총 이자 수익</div>
+        <div class="kpi-value c-green" id="kpi-interest">—</div>
+        <div class="kpi-sub" id="kpi-interest-pct">수익률 —</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">원금 대비 배수</div>
+        <div class="kpi-value c-blue" id="kpi-multi">—</div>
+        <div class="kpi-sub">최종 / 납입원금</div>
+      </div>
+    </div>
+
+    <!-- CHART -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">자산 성장 추이</span>
+        <div class="panel-legend">
+          <div class="leg"><div class="leg-dot" style="background:#1a56db"></div>적립식 복리</div>
+          <div class="leg"><div class="leg-dot" style="background:#059669"></div>거치식 복리</div>
+          <div class="leg"><div class="leg-dot" style="background:rgba(156,163,175,0.8)"></div>납입 원금</div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="chart"></canvas></div>
+    </div>
+
+    <!-- TWO COL -->
+    <div class="two-col">
+
+      <!-- 연도별 결과 테이블 -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">연도별 자산 현황</span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>연도</th>
+                <th>적립식 복리</th>
+                <th>거치식 복리</th>
+                <th>수익</th>
+              </tr>
+            </thead>
+            <tbody id="summary-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 연도별 납입금 조절 -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">연도별 납입금 조절</span>
+        </div>
+        <div class="yr-tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>연도</th>
+                <th style="text-align:left">납입 비율</th>
+                <th>월 납입금</th>
+              </tr>
+            </thead>
+            <tbody id="yearly-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── 상태 ──
+let yearlyMultipliers = {}; // key: year, val: multiplier (1.0 = 기본값)
+let chartInstance = null;
+
+// ── 포맷 ──
+function fmt(n) {
+  const v = Math.round(n);
+  if (v >= 100000000) return '₩' + (v/100000000).toFixed(2) + '억';
+  if (v >= 10000000)  return '₩' + (v/10000000).toFixed(1) + '천만';
+  if (v >= 1000000)   return '₩' + (v/1000000).toFixed(1) + '백만';
+  return '₩' + v.toLocaleString('ko-KR');
+}
+
+function fmtShort(n) {
+  const v = Math.round(n);
+  if (v >= 100000000) return (v/100000000).toFixed(1) + '억';
+  if (v >= 10000000)  return (v/10000000).toFixed(1) + '천만';
+  if (v >= 1000000)   return (v/1000000).toFixed(0) + '백만';
+  return (v/1000).toFixed(0) + 'K';
+}
+
+// ── 슬라이더 트랙 ──
+function updateTrack(el) {
+  const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
+  el.style.setProperty('--pct', pct + '%');
+}
+
+// ── 연도별 납입금 테이블 빌드 ──
+function buildYearlyTable() {
+  const Y = parseInt(document.getElementById('years').value);
+  const baseM = parseInt(document.getElementById('monthly').value);
+  const tbody = document.getElementById('yearly-tbody');
+  const maxM = 4000000;
+
+  tbody.innerHTML = '';
+  for (let y = 1; y <= Y; y++) {
+    const mult = yearlyMultipliers[y] !== undefined ? yearlyMultipliers[y] : 1.0;
+    const m = Math.round(baseM * mult);
+    const pct = Math.min(100, (m / maxM) * 100);
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${y}년차</td>
+      <td style="text-align:left">
+        <div style="display:flex;align-items:center;gap:0">
+          <span style="font-size:11px;color:var(--text3);min-width:36px">${Math.round(mult*100)}%</span>
+          <div class="yr-bar" style="width:${pct * 0.7}px;max-width:80px"></div>
+        </div>
+      </td>
+      <td>
+        <input type="number" class="yearly-input" data-year="${y}" value="${m}" min="0" max="4000000" step="10000">
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // 이벤트 바인딩
+  tbody.querySelectorAll('.yearly-input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const y = parseInt(inp.dataset.year);
+      const val = parseInt(inp.value) || 0;
+      yearlyMultipliers[y] = baseM > 0 ? val / baseM : 0;
+      calc(false); // 연도별 테이블 재빌드 없이 계산만
+    });
+    inp.addEventListener('focus', () => inp.select());
+  });
+}
+
+// ── 메인 계산 ──
+function calc(rebuildYearly = true) {
+  const P = parseInt(document.getElementById('principal').value);
+  const baseM = parseInt(document.getElementById('monthly').value);
+  const r = parseFloat(document.getElementById('rate').value) / 100;
+  const Y = parseInt(document.getElementById('years').value);
+  const rm = r / 12;
+
+  // 연도별 납입금 배열 (월)
+  const monthlyByYear = [];
+  for (let y = 1; y <= Y; y++) {
+    const mult = yearlyMultipliers[y] !== undefined ? yearlyMultipliers[y] : 1.0;
+    monthlyByYear.push(Math.round(baseM * mult));
+  }
+
+  // 계산
+  const labels = [];
+  const withMonthly = [];
+  const withoutMonthly = [];
+  const invested = [];
+
+  let balance = P;
+  let totalInvested = P;
+
+  withMonthly.push(Math.round(P));
+  withoutMonthly.push(Math.round(P));
+  invested.push(Math.round(P));
+  labels.push('0년');
+
+  for (let y = 1; y <= Y; y++) {
+    const M = monthlyByYear[y-1];
+    // 월별 복리 계산
+    for (let m = 0; m < 12; m++) {
+      balance = balance * (1 + rm) + M;
+      totalInvested += M;
+    }
+    withMonthly.push(Math.round(balance));
+    withoutMonthly.push(Math.round(P * Math.pow(1 + r, y)));
+    invested.push(Math.round(totalInvested));
+    labels.push(y + '년');
+  }
+
+  const finalTotal = withMonthly[Y];
+  const finalInvested = invested[Y];
+  const interest = finalTotal - finalInvested;
+  const ret = finalInvested > 0 ? ((interest/finalInvested)*100).toFixed(1) : '0.0';
+  const multi = finalInvested > 0 ? (finalTotal/finalInvested).toFixed(2) : '0';
+
+  // KPI
+  document.getElementById('kpi-invested').textContent = fmt(finalInvested);
+  document.getElementById('kpi-total').textContent = fmt(finalTotal);
+  document.getElementById('kpi-interest').textContent = fmt(interest);
+  document.getElementById('kpi-interest-pct').textContent = '수익률 +' + ret + '%';
+  document.getElementById('kpi-multi').textContent = multi + '배';
+
+  // 차트
+  if (chartInstance) chartInstance.destroy();
+  const ctx = document.getElementById('chart').getContext('2d');
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label:'적립식 복리',
+          data: withMonthly,
+          borderColor:'#1a56db',
+          backgroundColor:'rgba(26,86,219,0.07)',
+          borderWidth:2.5,pointRadius:0,fill:true,tension:0.35
+        },
+        {
+          label:'거치식 복리',
+          data: withoutMonthly,
+          borderColor:'#059669',
+          borderWidth:2,pointRadius:0,fill:false,tension:0.35
+        },
+        {
+          label:'납입 원금',
+          data: invested,
+          borderColor:'rgba(156,163,175,0.7)',
+          borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false
+        }
+      ]
+    },
+    options: {
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{
+          ticks:{maxTicksLimit:10,color:'#9ca3af',font:{size:11}},
+          grid:{color:'rgba(0,0,0,0.04)'},
+          border:{color:'rgba(0,0,0,0.08)'}
+        },
+        y:{
+          ticks:{
+            color:'#9ca3af',font:{size:11},
+            callback: v => fmtShort(v)
+          },
+          grid:{color:'rgba(0,0,0,0.04)'},
+          border:{color:'rgba(0,0,0,0.08)'}
+        }
+      }
+    }
+  });
+
+  // 요약 테이블
+  const milestones = [1,5,10,15,20,25,30,35,40].filter(y=>y<=Y);
+  if (!milestones.includes(Y)) milestones.push(Y);
+  milestones.sort((a,b)=>a-b);
+
+  document.getElementById('summary-tbody').innerHTML = milestones.map((y,i) => `
+    <tr>
+      <td>${y}년</td>
+      <td class="td-gold">${fmt(withMonthly[y])}</td>
+      <td class="td-green">${fmt(withoutMonthly[y])}</td>
+      <td class="${withMonthly[y]-invested[y]>=0?'td-blue':'td-red'}">+${fmt(withMonthly[y]-invested[y])}</td>
+    </tr>
+  `).join('');
+
+  // 연도별 납입금 테이블 (기간 변경 시만 재빌드)
+  if (rebuildYearly) buildYearlyTable();
+
+  // 목표 역산
+  calcGoal();
+}
+
+// ── 목표 역산 ──
+function calcGoal() {
+  const goal = parseFloat(document.getElementById('goal-amt').value) || 0;
+  const r = parseFloat(document.getElementById('rate').value) / 100;
+  const Y = parseInt(document.getElementById('years').value);
+  const rm = r / 12;
+  const months = Y * 12;
+  const P = parseInt(document.getElementById('principal').value);
+
+  if (goal <= 0 || months === 0) { document.getElementById('goal-monthly').textContent = '—'; return; }
+
+  const lumpFuture = P * Math.pow(1+rm, months);
+  const remaining = goal - lumpFuture;
+  if (remaining <= 0) { document.getElementById('goal-monthly').textContent = '원금만으로 달성 가능 ✓'; return; }
+
+  const monthly = remaining / ((Math.pow(1+rm, months) - 1) / rm);
+  document.getElementById('goal-monthly').textContent = monthly > 0 ? fmt(Math.ceil(monthly)) + ' / 월' : '—';
+}
+
+// ── 72의 법칙 ──
+function calcR72() {
+  const r = parseFloat(document.getElementById('r72').value);
+  document.getElementById('v-r72').textContent = r + '%';
+  document.getElementById('r72-result').textContent = (72/r).toFixed(1) + '년';
+  updateTrack(document.getElementById('r72'));
+}
+
+// ── 이벤트 바인딩 ──
+['principal','monthly','rate','years'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    updateTrack(el);
+    const rebuildYearly = (id === 'years' || id === 'monthly');
+    if (id === 'monthly') yearlyMultipliers = {}; // 기본값 초기화
+    calc(rebuildYearly);
+    // 라벨
+    if (id==='principal') document.getElementById('v-p').textContent = fmt(parseInt(el.value));
+    if (id==='monthly')   document.getElementById('v-m').textContent = fmt(parseInt(el.value));
+    if (id==='rate')      document.getElementById('v-r').textContent = parseFloat(el.value) + '%';
+    if (id==='years')     document.getElementById('v-y').textContent = el.value + '년';
+  });
+  updateTrack(el);
+});
+
+document.getElementById('r72').addEventListener('input', calcR72);
+document.getElementById('goal-amt').addEventListener('input', calcGoal);
+
+// ── 초기 실행 ──
+document.getElementById('v-p').textContent = fmt(parseInt(document.getElementById('principal').value));
+document.getElementById('v-m').textContent = fmt(parseInt(document.getElementById('monthly').value));
+document.getElementById('v-r').textContent = parseFloat(document.getElementById('rate').value) + '%';
+document.getElementById('v-y').textContent = document.getElementById('years').value + '년';
+calc(true);
+calcR72();
+</script>
+</body>
+</html>
